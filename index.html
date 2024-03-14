@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GET LAZADA DATA</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 50%;
+        margin: 0 auto;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        font-weight: bold;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Lazada Product Search</h1>
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="Enter search query..."
+        @keyup.enter="searchLazada"
+      />
+      <button @click="searchLazada">Search</button>
+      <table v-if="items.length > 0">
+        <thead>
+          <tr>
+            <th>อันดับ</th>
+            <th>ร้านค้า</th>
+            <th>สินค้า</th>
+            <th>ราคา</th>
+            <th>ขายได้</th>
+            <th>รายได้ (ประมาณ)</th>
+            <th>เรทติ้ง</th>
+            <th>เรทติ้ง +/-</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in items" :key="item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.shop }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.price }}</td>
+            <td>{{ item.itemSoldCnt }}</td>
+            <td>{{ item.profit }}</td>
+            <td>{{ item.rating }}</td>
+            <td>{{ item.ratingx }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>No items found.</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+
+    <script>
+      new Vue({
+        el: "#app",
+        data: {
+          items: [],
+          searchQuery: "",
+        },
+        methods: {
+          searchLazada() {
+            fetch(`http://localhost:3000/api/lazada?q=${this.searchQuery}`)
+              .then((response) => response.json())
+              .then((json) => {
+                console.log(json);
+                const pda = [];
+                if (json.mods.listItems && json.mods.listItems.length) {
+                  for (let i = 0; i < json.mods.listItems.length; i++) {
+                    const itemSoldCntLabel =
+                      json.mods.listItems[i].itemSoldCntShow;
+                    const pdas = {
+                      id: i + 1,
+                      shop: json.mods.listItems[i].sellerName,
+                      name: json.mods.listItems[i].name,
+                      price: json.mods.listItems[i].price,
+                      itemSoldCnt: 0,
+                      profit: 0,
+                      rating: 0,
+                      ratingx: 0,
+                    };
+                    if (itemSoldCntLabel) {
+                      const itemSoldCnt = itemSoldCntLabel.split(" ")[0];
+                      pdas["itemSoldCnt"] = itemSoldCnt;
+                      pdas["profit"] =
+                        Number(json.mods.listItems[i].price) *
+                        Number(itemSoldCnt);
+                      pdas["rating"] =
+                        Number(json.mods.listItems[i].ratingScore).toFixed(2);
+                    }
+                    console.log(pdas);
+                    pda.push(pdas);
+                  }
+                }
+                this.items = pda;
+              })
+              .catch((error) => console.log(error));
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
